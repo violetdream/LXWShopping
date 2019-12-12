@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.personal.user.datamodel.persistence.AddressMapper">
+  <resultMap id="BaseResultMap" type="com.personal.user.datamodel.entitys.Address">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="address_id" jdbcType="BIGINT" property="addressId" />
+    <result column="user_id" jdbcType="BIGINT" property="userId" />
+    <result column="user_name" jdbcType="VARCHAR" property="userName" />
+    <result column="tel" jdbcType="VARCHAR" property="tel" />
+    <result column="street_name" jdbcType="VARCHAR" property="streetName" />
+    <result column="is_default" jdbcType="BIT" property="isDefault" />
+  </resultMap>
+
+  <select id="selectAddresss" resultMap="BaseResultMap" parameterType="java.util.Map">
+    select * from tb_address
+    where 1=1
+    <if test="id!=null and id!=''">
+      and address_id=#{id}
+    </if>
+    <if test="userId!=null and userId!=''">
+      and user_id=#{userId}
+    </if>
+  </select>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long">
+    select * from tb_address
+    where address_id=#{addressId}
+  </select>
+  <insert id="insertAddress" parameterType="com.personal.user.datamodel.entitys.Address">
+    insert into tb_address(address_id,user_id,user_name,tel,street_name,is_default)
+    values(#{addressId},#{userId},#{userName},#{tel},#{streetName},#{isDefault})
+  </insert>
+  <update id="updateAddressByCondition" parameterType="com.personal.user.datamodel.entitys.Address">
+    update tb_address set user_id=#{userId},user_name=#{userName},tel=#{tel},street_name=#{streetName}
+    is_default=#{isDefault} where address_id=#{addressId}
+  </update>
+  <delete id="deleteAddressByCondition" parameterType="com.personal.user.datamodel.entitys.Address">
+    delete from tb_address where address_id=#{addressId}
+  </delete>
+  <delete id="deleteAddressByAddressId" parameterType="Long">
+    delete from tb_address where address_id=#{addressId}
+  </delete>
+</mapper>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.personal.user.datamodel.persistence.UserMapper">
+  <resultMap id="selectUserIdResultMap" type="com.personal.user.datamodel.entitys.User">
+    <id column="id" jdbcType="BIGINT" property="id" />
+    <result column="username" jdbcType="VARCHAR" property="username" />
+    <result column="password" jdbcType="VARCHAR" property="password" />
+    <result column="phone" jdbcType="VARCHAR" property="phone" />
+    <result column="email" jdbcType="VARCHAR" property="email" />
+    <result column="created" jdbcType="TIMESTAMP" property="created" />
+    <result column="updated" jdbcType="TIMESTAMP" property="updated" />
+    <result column="sex" jdbcType="VARCHAR" property="sex" />
+    <result column="address" jdbcType="VARCHAR" property="address" />
+    <result column="state" jdbcType="INTEGER" property="state" />
+    <result column="file" jdbcType="VARCHAR" property="file" />
+    <result column="description" jdbcType="VARCHAR" property="description" />
+    <result column="points" jdbcType="INTEGER" property="points" />
+    <result column="balance" jdbcType="DECIMAL" property="balance" />
+  </resultMap>
+  
+  <select id="selectUserByName" resultMap="selectUserIdResultMap" parameterType="java.lang.String">
+    <!-- WARNING - @mbg.generated -->
+    select id, username, password, phone, email, created, updated, sex, address, state, file, description, points, balance
+    from tb_member
+    where username=#{value} and state='1'
+  </select>
+
+  <insert id="insertUser" parameterType="User">
+    insert into tb_member(username, password, phone, email, created, updated, sex, address, state)
+    value(#{username},#{password},#{phone},#{email},#{created},#{updated},#{sex},#{address},#{state})
+  </insert>
+  
+</mapper>

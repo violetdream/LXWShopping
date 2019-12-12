@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.personal.shopping.dal.persistence.ItemCatMapper">
+  <resultMap id="BaseResultMap" type="com.personal.shopping.dal.entitys.ItemCat">
+    <id column="id" jdbcType="BIGINT" property="id" />
+    <result column="parent_id" jdbcType="BIGINT" property="parentId" />
+    <result column="name" jdbcType="VARCHAR" property="name" />
+    <result column="status" jdbcType="INTEGER" property="status" />
+    <result column="sort_order" jdbcType="INTEGER" property="sortOrder" />
+    <result column="is_parent" jdbcType="BIT" property="isParent" />
+    <result column="icon" jdbcType="VARCHAR" property="icon" />
+    <result column="remark" jdbcType="VARCHAR" property="remark" />
+    <result column="created" jdbcType="TIMESTAMP" property="created" />
+    <result column="updated" jdbcType="TIMESTAMP" property="updated" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    id, parent_id, name, status, sort_order, is_parent, icon, remark, created, updated
+  </sql>
+  <select id="selectItemCats" parameterType="java.util.Map" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List"></include>
+    from tb_item_cat
+    order by sort_order
+    <choose>
+      <when test="Sort==1"> asc </when>
+      <otherwise> desc </otherwise>
+    </choose>
+  </select>
+</mapper>
