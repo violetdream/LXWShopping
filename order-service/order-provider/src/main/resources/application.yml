@@ -1,0 +1,15 @@
+spring:
+  profiles:
+    active: dev
+mybatis:
+  config-location: classpath:mybatis-config.xml
+#  mapper-locations: classpath*:com/personal/order/dal/persistence/*Mapper.xml"
+  type-aliases-package: com.personal.order.dal.entitys
+pagehelper:
+  helper-dialect: mysql
+  reasonable: true
+  support-methods-arguments: true
+  params: count=countSql
+logging:
+  level:
+    TAlarmInformationMapper: debug

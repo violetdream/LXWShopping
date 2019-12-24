@@ -146,6 +146,20 @@ org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
 
 #  运维及部署
 
+## Git版本管理
+
+> 在当前工程目录创建git版本控制，D:\Project_WorkSpace\LXWShopping目录下，跑命令
+>
+> git init
+>
+> git add .
+>
+> git commit -m "shopping"
+>
+> git remote add origin [github地址](https://github.com/violetdream/LXWShopping.git)
+>
+> git push -u origin master
+
 ## 安装ZooKeeper
 
 ```shell
@@ -166,17 +180,17 @@ docker exec -it 2781fd823b82 /bin/bash
 #拉取境像
 docker pull redis
 #启动镜像
-docker run -p 6379:6379 -v $PWD/data:/data -d redis:latest redis-server --appendonly yes --name redis-service
+docker run -d --name shopping_redis -p 6379:6379 -v /lxw/redis/data:/data -v /lxw/redis/redis.conf:/etc/redis/redis.conf  redis:latest
 
 命令说明：
 -p 6379:6379 : 将容器的6379端口映射到主机的6379端口
--v $PWD/data:/data : 将主机中当前目录下的data挂载到容器的/data
+-v /lxw/redis/data : 将主机中当前目录下的data挂载到容器的/data
 redis-server --appendonly yes : 在容器执行redis-server启动命令，并打开redis持久化配置
 #连接redis的几种方式
-docker exec -it 567806e4121e redis-cli
-docker exec -it 567806e4121e redis-cli -h localhost -p 6379 
-docker exec -it 567806e4121e redis-cli -h 127.0.0.1 -p 6379 
-docker exec -it 567806e4121e redis-cli -h 172.17.0.3 -p 6379 
+docker exec -it f20faa4b722f redis-cli
+docker exec -it f20faa4b722f redis-cli -h localhost -p 6379 
+docker exec -it f20faa4b722f redis-cli -h 127.0.0.1 -p 6379 
+docker exec -it f20faa4b722f redis-cli -h 172.17.0.4 -p 6379 
 
 ```
 
