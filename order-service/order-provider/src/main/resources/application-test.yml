@@ -29,7 +29,7 @@ spring:
         max-wait: 3000
         min-idle: 4
   rabbitmq:
-    host: 127.0.0.1
+    host: 120.79.28.199
     port: 5672
     username: rabbitmq
     password: 123456
@@ -40,11 +40,11 @@ spring:
         acknowledge-mode: manual
 dubbo:
   application:
-    name: shopping-service
-    owner: LXW
+    name: order-service
+    owner: violetdream
   protocol:
     name: dubbo
-    port: 20881
+    port: 20882
   registry:
     address: zookeeper://120.79.28.199:2181
     check: true
@@ -56,7 +56,7 @@ dubbo:
     cycle-report: false
     group: dubbo-dev
   scan:
-    base-packages: com.personal.shopping.services
+    base-packages: com.personal.order.services
 
 
 

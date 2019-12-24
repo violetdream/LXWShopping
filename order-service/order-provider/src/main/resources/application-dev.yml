@@ -40,11 +40,11 @@ spring:
         acknowledge-mode: manual
 dubbo:
   application:
-    name: user-service
+    name: order-service
     owner: violetdream
   protocol:
     name: dubbo
-    port: 20881
+    port: 20882
   registry:
     address: zookeeper://redis.gpmall.com:2181
     check: true
