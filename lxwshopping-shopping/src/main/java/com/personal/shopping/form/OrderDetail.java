@@ -1,21 +1,17 @@
 package com.personal.shopping.form;
 
+import com.personal.order.dto.OrderItemDto;
 import lombok.Data;
 import java.math.BigDecimal;
 import java.util.List;
 
-/**
- * 腾讯课堂搜索【咕泡学院】
- * 官网：www.gupaoedu.com
- * 风骚的Mic 老师
- * create-date: 2019/8/8-14:02
- */
+
 @Data
 public class OrderDetail {
-   /* private String userName;
+   private String userName;
     private BigDecimal orderTotal;
     private long userId;
     private List<OrderItemDto> goodsList;
     private String tel;
-    private String streetName;*/
+    private String streetName;
 }

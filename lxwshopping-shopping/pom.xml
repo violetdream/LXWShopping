@@ -74,11 +74,11 @@
             <groupId>com.personal</groupId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
-       <!-- <dependency>
+        <dependency>
             <groupId>com.personal</groupId>
-            <version>1.0-SNAPSHOT</version>
+            <version>1.0.0-SNAPSHOT</version>
             <artifactId>order-api</artifactId>
-        </dependency>-->
+        </dependency>
        <!-- <dependency>
             <groupId>com.personal</groupId>
             <artifactId>comment-api</artifactId>

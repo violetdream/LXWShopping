@@ -17,7 +17,7 @@
   </sql>
 
 
-    <update id="updateStock" parameterType="com.gpmall.order.dal.entitys.Stock">
+    <update id="updateStock" parameterType="com.personal.order.dal.entitys.Stock">
     UPDATE tb_stock
       <trim prefix="set" suffixOverrides=",">
 
@@ -37,7 +37,7 @@
   select * from tb_stock where item_id=#{itemId}
   </select>
 
-  <select id="findStocksForUpdate" parameterType="java.util.List" resultType="com.gpmall.order.dal.entitys.Stock" >
+  <select id="findStocksForUpdate" parameterType="java.util.List" resultType="com.personal.order.dal.entitys.Stock" >
     select * from tb_stock where item_id in
      <foreach collection='itemIds' item='itemId' open='(' separator=',' close=')'> #{itemId} </foreach>
       for update
