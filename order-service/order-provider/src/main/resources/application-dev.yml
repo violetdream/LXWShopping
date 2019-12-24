@@ -29,7 +29,7 @@ spring:
         max-wait: 3000
         min-idle: 4
   rabbitmq:
-    host: 127.0.0.1
+    host: 120.79.28.199
     port: 5672
     username: rabbitmq
     password: 123456
