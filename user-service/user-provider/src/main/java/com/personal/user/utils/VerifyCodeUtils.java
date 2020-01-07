@@ -1,7 +1,7 @@
 package com.personal.user.utils;
 
 import com.personal.user.datamodel.Image;
-import sun.misc.BASE64Encoder;
+import java.util.Base64;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
@@ -36,7 +36,7 @@ public class VerifyCodeUtils {
         image.setCode(code);
         ByteArrayOutputStream dataOutPuOutputStream=new ByteArrayOutputStream();
         outputImage(w, h, dataOutPuOutputStream, code);
-        image.setImg(new BASE64Encoder().encode(dataOutPuOutputStream.toByteArray()));
+        image.setImg(Base64.getEncoder().encodeToString(dataOutPuOutputStream.toByteArray()));
         return  image;
     }
     /**

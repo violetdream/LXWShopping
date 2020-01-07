@@ -146,19 +146,212 @@ org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
 
 #  运维及部署
 
-## Git版本管理
+## 准备环境
 
-> 在当前工程目录创建git版本控制，D:\Project_WorkSpace\LXWShopping目录下，跑命令
->
-> git init
->
-> git add .
->
-> git commit -m "shopping"
->
-> git remote add origin [github地址](https://github.com/violetdream/LXWShopping.git)
->
-> git push -u origin master
+* 一台2G单核服务器，1M宽带，装有CentOS7.6操作系统
+
+* 对操作系统更新并安装依赖
+
+  
+
+  ``` shell
+  yum -y update
+  yum install -y conntrack ipvsadm ipset jq sysstat curl iptables libseccomp
+  #对系统相关参数设置
+  01 `关闭防火墙`
+  	systemctl stop firewalld && systemctl disable firewalld
+  02 `关闭selinux`
+  	setenforce 0
+  	sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
+  03 `关闭swap`
+  	swapoff -a
+  	sed -i '/swap/s/^\(.*\)$/#\1/g' /etc/fstab
+  04 `配置iptables的ACCEPT规则`
+  	iptables -F && iptables -X && iptables \
+      -F -t nat && iptables -X -t nat && iptables -P FORWARD ACCEPT
+  05 `设置系统参数`
+  # ====================================================================================
+  cat <<EOF >  /etc/sysctl.d/k8s.conf
+  net.bridge.bridge-nf-call-ip6tables = 1
+  net.bridge.bridge-nf-call-iptables = 1
+  EOF
+  sysctl --system
+  # ======================================================================================
+  ```
+
+  
+
+* 安装docker18.09.0
+
+  ``` shell
+  01 `进入虚拟机`
+      vagrant ssh [nodeName]
+  02 `卸载之前安装的docker`
+      sudo yum remove docker docker latest docker-latest-logrotate \
+      docker-logrotate docker-engine docker-client docker-client-latest docker-common
+  03 `安装必要依赖`
+      sudo yum install -y yum-utils device-mapper-persistent-data lvm2
+  04 `添加软件源信息`
+      sudo yum-config-manager \
+      --add-repo http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
+      yum list | grep docker-ce
+  05 `更新yum缓存`
+      sudo yum makecache fast
+  06 `安装docker`
+      sudo yum install -y docker-ce-18.09.0 docker-ce-cli-18.09.0 containerd.io 18.09.0
+  07 `启动docker并设置开机启动`
+      sudo systemctl start docker && sudo systemctl enable docker
+  08 `测试docker安装是否成功`
+      sudo docker run hello-world
+  `默认安装在目录/var/lib/docker`
+  ```
+
+  
+
+* 安装openjdk
+
+  ``` shell
+  yum list | grep openjdk
+  yum install java-11-openjdk.x86_64安装Git
+  `默认安装在目录/usr/lib/jvm/java-11-openjdk-11.0.5.10-0.el7_7.x86_64`
+  #发现还是需要用JDK
+  下载并上传jdk-11.0.5_linux-x64_bin.tar.gz至目录/lxw/java/
+  配置/etc/profile
+  export MAVEN_HOME=/lxw/maven/apache-maven-3.6.3
+  export JAVA_HOME=/lxw/java/jdk-11.0.5
+  export PATH=$JAVA_HOME/bin:$MAVEN_HOME/bin:$PATH
+  ```
+
+  
+
+* 安装Git
+
+  ``` shell
+  yum list | grep git
+  yum install git
+  `默认安装在目录/usr/libexec/git-core`
+  ```
+
+* 安装Maven
+
+  ``` shell
+  cd /lxw/maven
+  wget http://mirror.bit.edu.cn/apache/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz
+  tar -zxvf apache-maven-3.6.3-bin.tar.gz
+  mkdir repo
+  #配置环境变量,修改maven本地仓库存放路径及mirror境像地址
+  vi /lxw/maven/apache-maven-3.6.3/conf/settings.xml
+  通过修改profile文件:
+  vim /etc/profile
+  /export PATH //找到设置PATH的行，添加
+  export MAVEN_HOME=/lxw/maven/apache-maven-3.6.3
+  export PATH=$JAVA_HOME/bin:$MAVEN_HOME/bin:$PATH
+  生效方法：系统重启
+  有效期限：永久有效
+  用户局限：对所有用户
+  shutdown -r now 或  source /etc/profile 生效
+  mvn -v
+  Apache Maven 3.6.3 (cecedd343002696d0abb50b32b541b8a6ba2883f)
+  Maven home: /lxw/maven/apache-maven-3.6.3
+  Java version: 11.0.5, vendor: Oracle Corporation, runtime: /usr/lib/jvm/java-11-openjdk-11.0.5.10-0.el7_7.x86_64
+  Default locale: en_US, platform encoding: UTF-8
+  OS name: "linux", version: "3.10.0-1062.9.1.el7.x86_64", arch: "amd64", family: "unix"
+
+  #使和软链接，把mvn命令建立到/usr/bin目录下
+  `Usage: ln [OPTION]... [-T] TARGET LINK_NAME   (1st form)\
+    or:  ln [OPTION]... TARGET                  (2nd form)\
+    or:  ln [OPTION]... TARGET... DIRECTORY     (3rd form)\
+    or:  ln [OPTION]... -t DIRECTORY TARGET...  (4th form)\
+  In the 1st form, create a link to TARGET with the name LINK_NAME.\
+  In the 2nd form, create a link to TARGET in the current directory.\
+  In the 3rd and 4th forms, create links to each TARGET in DIRECTORY.
+  
+  cd /usr/bin
+  ln –s /lxw/maven/apache-maven-3.6.3/bin/mvn
+  ```
+  
+  
+
+## 安装Jenkins实现自动化布署
+
+``` shell
+# 为了能够使用jenkins库，首先需要导入jenkins库的 key 
+`To use this repository, run the following command:
+ If you've previously imported the key from Jenkins, the "rpm --import" will fail because you already have a key. Please ignore that and move on.
+`
+sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat/jenkins.repo
+sudo rpm --import https://pkg.jenkins.io/redhat/jenkins.io.key
+# 安装
+yum install jenkins
+#删除软件：yum remove jenkins-x.x.x.rpm或者yum erase jenkins-x.x.x.rpm
+#升级软件：yum upgrade jenkins或者yum update jenkins
+#查询信息：yum info jenkins
+#Start/Stop
+sudo service jenkins start/stop/restart
+sudo chkconfig jenkins on
+
+```
+
+### What does this package do?
+
+- Jenkins will be launched as a daemon on startup. See `/etc/init.d/jenkins` for more details.
+- The '`jenkins`' user is created to run this service. If you change this to a different user via the config file, you must change the owner of /var/log/jenkins, /var/lib/jenkins, and /var/cache/jenkins.
+- Log file will be placed in `/var/log/jenkins/jenkins.log`. Check this file if you are troubleshooting Jenkins.
+- `/etc/sysconfig/jenkins` will capture configuration parameters for the launch.
+- By default, Jenkins listen on port 8080. Access this port with your browser to start configuration.  Note that the built-in firewall may have to be opened to access this port from other computers.  (See http://www.cyberciti.biz/faq/disable-linux-firewall-under-centos-rhel-fedora/ for instructions how to disable the firewall permanently)
+- A Jenkins RPM repository is added in `/etc/yum.repos.d/jenkins.repo`
+
+### Configure the firewall
+
+```shell
+firewall-cmd --permanent --new-service=jenkins
+firewall-cmd --permanent --service=jenkins --set-short="Jenkins Service Ports"
+firewall-cmd --permanent --service=jenkins --set-description="Jenkins service firewalld port exceptions"
+firewall-cmd --permanent --service=jenkins --add-port=8080/tcp
+firewall-cmd --permanent --add-service=jenkins
+firewall-cmd --zone=public --add-service=http --permanent
+firewall-cmd --reload
+
+firewall-cmd --list-all
+```
+
+### 环境配置
+
+``` shell
+`01 登录安装`
+http://120.79.28.199:8080
+`02 安装依赖后，输入用户名信息`
+用户名:jenkins
+密码：123456
+全名：violetdream
+`03 插件管理中，选择Maven Integration插件进行直接安装`
+
+```
+
+
+
+## 提交代码-Git版本管理
+
+``` shell
+在当前工程目录创建git版本控制，D:\Project_WorkSpace\LXWShopping目录下，跑命令(在liuxianwei_dev分支上进行开发并提交commit，在master分支上进行合并merge，并push到远程github仓库)
+
+git init
+
+git add .
+
+git commit -m "shopping"
+
+git remote add origin [github地址](https://github.com/violetdream/LXWShopping.git)
+
+git push -u origin master
+
+#重点功能 git sparseCheckout 下载github上的子目录
+git config core.sparseCheckout true
+#加入你要导出的子目录
+echo resources/templates/trydone>> .git/info/sparse-checkout
+#开始pull下来，与正常使用git一样
+git pull origin master
+```
 
 ## 安装ZooKeeper
 
@@ -343,7 +536,54 @@ server{
 
 ```
 
+## 安装RabbitMQ
 
+``` shell
+#拉取境像文件 [rabbitmq image](https://registry.hub.docker.com/_/rabbitmq/)
+docker pull rabbitmq:3.8.2-management
+#启动rabbitmq
+docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 -v /lxw/rabbitmq/data:/var/lib/rabbitmq --hostname myRabbit -e RABBITMQ_DEFAULT_USER=rabbitmq -e RABBITMQ_DEFAULT_PASS=123456 rabbitmq:3.8.2-management
+#说明：
+-d 后台运行容器；
+--name 指定容器名；
+-p 指定服务运行的端口（5672：应用访问端口；15672：控制台Web端口号）；
+-v 映射目录或文件；
+--hostname  主机名（RabbitMQ的一个重要注意事项是它根据所谓的 “节点名称” 存储数据，默认为主机名）；
+-e 指定环境变量；（RABBITMQ_DEFAULT_VHOST：默认虚拟机名；RABBITMQ_DEFAULT_USER：默认的用户名；RABBITMQ_DEFAULT_PASS：默认用户名的密码）
+#打开web管理端查看
+可以使用浏览器打开web管理端：http://120.79.28.199:15672
+
+#通过命令对rabbitmq进行读写以及管理队列的权限，完成对rabbitmq的授权,然后启动项目就正常了
+docker exec -it rabbitmq /bin/bash
+rabbitmqctl set_permissions -p / rabbitmq .* .* .*
+
+#添加queue及Exchange如下图所示
+```
+
+``` java
+public static final String DELAY_EXCHANGE="delay_exchange";
+public static  final String DELAY_QUEUE="delay_queue";
+//报错
+[ERROR] 2019-12-26 17:14:48,578 --AMQP Connection 120.79.28.199:5672-- [org.springframework.amqp.rabbit.connection.CachingConnectionFactory] Channel shutdown: connection error; protocol method: #method<connection.close>(reply-code=503, reply-text=COMMAND_INVALID - unknown exchange type 'x-delayed-message', class-id=40, method-id=10) 
+需要安装rabbitmq_delayed_message_exchange插件
+rabbitmq-plugins list
+rabbitmq-plugins enable rabbitmq_delayed_message_exchange
+```
+
+```bash
+1. 进入docker容器内 docker exec  -t rabbit  bash
+2. rabbitmq-plugins list 命令查看已安装插件
+3. 在插件网址找到延迟插件的下载地址 http://www.rabbitmq.com/community-plugins.html 
+4. exit 退出容器到宿主机中,下载插件: wget https://github.com/rabbitmq/rabbitmq-delayed-message-exchange/releases/download/v3.8.0/rabbitmq_delayed_message_exchange-3.8.0.ez
+5. 解压 unzip v3.8.0.zip -d . 
+6. 拷贝至docker容器内: docker cp rabbitmq_delayed_message_exchange-3.8.0.ez rabbitmq:/plugins
+7. 再次进入docker容器内: 进入docker容器内 docker exec  -t rabbitmq  bash
+8. 执行命令让插件生效: 启动延时插件：rabbitmq-plugins enable rabbitmq_delayed_message_exchange
+```
+
+![image-20191226165049910](C:\Users\刘仙伟\AppData\Roaming\Typora\typora-user-images\image-20191226165049910.png)
+
+![image-20191226165241329](C:\Users\刘仙伟\AppData\Roaming\Typora\typora-user-images\image-20191226165241329.png)
 
 
 
@@ -499,5 +739,74 @@ docker run -d --name lxwshopping-shopping -p 8082:8082 lxwshopping-shopping-imag
 docker login --username=violetdream@aliyun.com registry.cn-hangzhou.aliyuncs.com
 docker tag lxwshopping-shopping-image registry.cn-hangzhou.aliyuncs.com/violetdream/lxwshopping-shopping:2019
 docker push registry.cn-hangzhou.aliyuncs.com/violetdream/lxwshopping-shopping:2019
+```
+
+
+
+## 利用Jenkins搭建自动化布署
+
+Jenkins上配置` 全局工具配置 `
+
+![image-20200103151035598](C:\Users\刘仙伟\AppData\Roaming\Typora\typora-user-images\image-20200103151035598.png)
+
+![image-20200103151046976](C:\Users\刘仙伟\AppData\Roaming\Typora\typora-user-images\image-20200103151046976.png)
+
+![image-20200103151101465](C:\Users\刘仙伟\AppData\Roaming\Typora\typora-user-images\image-20200103151101465.png)
+
+ 78e0fc7568408daf7ad7864d358f586dc1c7ab92`
+
+进入`GitHub上指定的项目 --> setting --> Webhooks --> add webhook `
+
+![image-20200103153710594](C:\Users\刘仙伟\AppData\Roaming\Typora\typora-user-images\image-20200103153710594.png)
+
+在Jenkins上配置GitHub服务器
+
+![image-20200103154303789](C:\Users\刘仙伟\AppData\Roaming\Typora\typora-user-images\image-20200103154303789.png)
+
+![image-20200103154041901](C:\Users\刘仙伟\AppData\Roaming\Typora\typora-user-images\image-20200103154041901.png)
+
+创建freestyle任务
+
+![image-20200103155445844](C:\Users\刘仙伟\AppData\Roaming\Typora\typora-user-images\image-20200103155445844.png)
+
+
+
+![image-20200103162452893](C:\Users\刘仙伟\AppData\Roaming\Typora\typora-user-images\image-20200103162452893.png)
+
+
+
+![image-20200103160338394](C:\Users\刘仙伟\AppData\Roaming\Typora\typora-user-images\image-20200103160338394.png)
+
+
+
+![image-20200103160548179](C:\Users\刘仙伟\AppData\Roaming\Typora\typora-user-images\image-20200103160548179.png)
+
+
+
+![image-20200103160645502](C:\Users\刘仙伟\AppData\Roaming\Typora\typora-user-images\image-20200103160645502.png)
+
+至关重要的一步
+
+![image-20200107100245086](C:\Users\刘仙伟\AppData\Roaming\Typora\typora-user-images\image-20200107100245086.png)
+
+
+
+## User-service构建脚本
+
+``` shell
+#!/bin/sh
+cd /var/lib/jenkins/workspace/user-service/lxwshopping-parent
+mvn clean
+mvn install
+echo 'parent install OK '
+cd /var/lib/jenkins/workspace/user-service/lxwshopping-commons
+mvn clean
+mvn install
+echo 'commons install OK '
+cd /var/lib/jenkins/workspace/user-service/user-service
+mvn clean
+mvn install
+echo 'user services OK '
+echo 'OK'
 ```
 
