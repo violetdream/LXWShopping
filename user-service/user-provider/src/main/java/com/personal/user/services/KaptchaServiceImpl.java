@@ -1,6 +1,5 @@
 package com.personal.user.services;
 
-import com.personal.tool.exception.ExceptionUtil;
 import com.personal.user.constants.SysRetCodeConstants;
 import com.personal.user.datamodel.Image;
 import com.personal.user.datamodel.KaptchaCodeRequest;
@@ -14,7 +13,6 @@ import org.apache.dubbo.config.annotation.Service;
 import org.redisson.api.RBucket;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Configuration;
 import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
