@@ -204,6 +204,8 @@ org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
   08 `测试docker安装是否成功`
       sudo docker run hello-world
   `默认安装在目录/var/lib/docker`
+  #限制每个容器可以占用的磁盘空间
+  sudo dockerd --storage-driver overlay2 --storage-opt overlay2.size=1G
   ```
 
   
@@ -326,7 +328,29 @@ http://120.79.28.199:8080
 全名：violetdream
 `03 插件管理中，选择Maven Integration插件进行直接安装`
 
+`把jenkins用户加入到dockerroot用户组`
+vim /etc/group
+#group_name:passwd:GID:user_list
+dockerroot:x:666:jenkins
+source /etc/group
+`在/etc/group 中的每条记录分四个字段：\
+第一字段：用户组名称；\
+第二字段：用户组密码；\
+第三字段：GID\
+第四字段：用户列表，每个用户之间用,号分割；本字段可以为空；如果字段为空表示用户组为GID的用户名；
+
+gpasswd -a jenkins dockerroot #将登陆用户加入到docker用户组中
+gpasswd -a jenkins root #将登陆用户加入到docker用户组中
+newgrp dockerroot #更新用户组
+
+#在脚本中使用sudo命令出现错误时sudo: no tty present and no askpass program specified
+vi /etc/sudoers
+jenkins ALL=(ALL) NOPASSWD: ALL
+
+
 ```
+
+![image-20200107112415248](C:\Users\刘仙伟\AppData\Roaming\Typora\typora-user-images\image-20200107112415248.png)
 
 
 
@@ -373,7 +397,7 @@ docker exec -it 2781fd823b82 /bin/bash
 #拉取境像
 docker pull redis
 #启动镜像
-docker run -d --name shopping_redis -p 6379:6379 -v /lxw/redis/data:/data -v /lxw/redis/redis.conf:/etc/redis/redis.conf  redis:latest
+docker run -d --name redis -p 6379:6379 -v /lxw/redis/data:/data -v /lxw/redis/redis.conf:/etc/redis/redis.conf  redis:latest
 
 命令说明：
 -p 6379:6379 : 将容器的6379端口映射到主机的6379端口
@@ -807,6 +831,24 @@ cd /var/lib/jenkins/workspace/user-service/user-service
 mvn clean
 mvn install
 echo 'user services OK '
-echo 'OK'
+echo 'ALL INSTALL OK'
+cat <<EOF >  ./user-provider/target/Dockerfile
+FROM openjdk:8
+MAINTAINER violetdream
+LABEL name="user-service-image" version="1.0" author="violetdream"
+COPY user-provider-*.jar user-service-image.jar
+CMD ["java","-jar","user-service-image.jar"]
+EOF
+sudo docker stop user-service
+sudo docker rm user-service
+sudo docker rmi user-service-image
+sudo docker build -t user-service-image ./user-provider/target/
+echo 'user-service Image Create OK'
+sudo docker run -d --name user-service user-service-image
+echo 'user-service Container Create OK'
+#将境像推送到我的阿里云Hub上进行Registry
+sudo docker tag user-service-image registry.cn-hangzhou.aliyuncs.com/lxwshopping/user-service:2019
+sudo docker push registry.cn-hangzhou.aliyuncs.com/lxwshopping/user-service:2019
+sudo docker rmi registry.cn-hangzhou.aliyuncs.com/lxwshopping/user-service:2019
 ```
 
