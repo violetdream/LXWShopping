@@ -781,11 +781,15 @@ Jenkins上配置` 全局工具配置 `
 
 进入`GitHub上指定的项目 --> setting --> Webhooks --> add webhook `
 
-![image-20200103153710594](C:\Users\刘仙伟\AppData\Roaming\Typora\typora-user-images\image-20200103153710594.png)
+![image-20200108160429896](C:\Users\刘仙伟\AppData\Roaming\Typora\typora-user-images\image-20200108160429896.png)
 
 在Jenkins上配置GitHub服务器
 
 ![image-20200103154303789](C:\Users\刘仙伟\AppData\Roaming\Typora\typora-user-images\image-20200103154303789.png)
+
+![image-20200108160219734](C:\Users\刘仙伟\AppData\Roaming\Typora\typora-user-images\image-20200108160219734.png)
+
+
 
 ![image-20200103154041901](C:\Users\刘仙伟\AppData\Roaming\Typora\typora-user-images\image-20200103154041901.png)
 
