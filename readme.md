@@ -856,3 +856,14 @@ sudo docker push registry.cn-hangzhou.aliyuncs.com/lxwshopping/user-service:2019
 sudo docker rmi registry.cn-hangzhou.aliyuncs.com/lxwshopping/user-service:2019
 ```
 
+## lxwshopping-front构建脚本
+
+``` shell
+#!/bin/sh
+cd /var/lib/jenkins/workspace/user-service/lxwshopping-front
+sudo npm install
+echo 'lxwshopping-front install OK '
+ls -ltr ./
+
+```
+
