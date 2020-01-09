@@ -868,9 +868,9 @@ sudo docker rmi registry.cn-hangzhou.aliyuncs.com/lxwshopping/user-service:2019
 #!/bin/sh
 cd /var/lib/jenkins/workspace/lxwshopping-front/lxwshopping-front
 #注意至少要保证free内存1G可用才能成功，在这里我提前安装好
-#sudo npm install
+sudo npm install
 echo 'lxwshopping-front install OK '
-rm -rf dist
+sudo rm -rf dist
 sudo npm run build
 echo 'lxwshopping-front build OK '
 ls -ltr ./
