@@ -226,7 +226,7 @@ yum list | grep git
 yum install git
 `默认安装在目录/usr/libexec/git-core`
 #温馨提示：在Windows下设置下
-
+git config --global core.autocrlf false
 ```
 
 ### 安装Maven
