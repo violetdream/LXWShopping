@@ -1,6 +1,6 @@
 spring:
   profiles:
-    active: dev
+    active: test
 mybatis:
   config-location: classpath:mybatis-config.xml
   mapper-locations: classpath*:com/personal/shopping/dal/persistence/*Mapper.xml"
