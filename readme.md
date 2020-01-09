@@ -825,6 +825,27 @@ Jenkins上配置` 全局工具配置 `
 
 
 
+## lxwshopping-front构建脚本
+
+``` shell
+#!/bin/sh
+cd /var/lib/jenkins/workspace/lxwshopping-front/lxwshopping-front
+#注意至少要保证free内存1G可用才能成功，在这里我提前安装好
+#sudo npm install
+#echo 'lxwshopping-front install OK '
+#sudo rm -rf dist
+#sudo npm run build
+#echo 'lxwshopping-front build OK '
+#ls -ltr ./
+sudo rm -rf /lxw/lxwshopping-front/static/
+sudo cp -rf ./dist/* /lxw/lxwshopping-front/
+echo 'copy dist success'
+sudo rm -rf dist
+
+```
+
+
+
 ## User-service构建脚本
 
 ``` shell
@@ -862,18 +883,33 @@ sudo docker push registry.cn-hangzhou.aliyuncs.com/lxwshopping/user-service:2019
 sudo docker rmi registry.cn-hangzhou.aliyuncs.com/lxwshopping/user-service:2019
 ```
 
-## lxwshopping-front构建脚本
+## shopping-service构建脚本
 
 ``` shell
 #!/bin/sh
-cd /var/lib/jenkins/workspace/lxwshopping-front/lxwshopping-front
-#注意至少要保证free内存1G可用才能成功，在这里我提前安装好
-sudo npm install
-echo 'lxwshopping-front install OK '
-sudo rm -rf dist
-sudo npm run build
-echo 'lxwshopping-front build OK '
-ls -ltr ./
-
+#依赖于user-service项目关系
+cd /var/lib/jenkins/workspace/shopping-service/shopping-service
+mvn clean
+mvn install
+echo 'shopping services OK '
+echo 'ALL INSTALL OK'
+cat <<EOF >  ./shopping-provider/target/Dockerfile
+FROM openjdk:8
+MAINTAINER violetdream
+LABEL name="shopping-service-image" version="1.0" author="violetdream"
+COPY shopping-provider-*.jar shopping-service-image.jar
+CMD ["java","-jar","shopping-service-image.jar"]
+EOF
+sudo docker stop shopping-service
+sudo docker rm shopping-service
+sudo docker rmi shopping-service-image
+sudo docker build -t shopping-service-image ./shopping-provider/target/
+echo 'shopping-service Image Create OK'
+sudo docker run -d --name shopping-service shopping-service-image
+echo 'shopping-service Container Create OK'
+#将境像推送到我的阿里云Hub上进行Registry
+sudo docker tag shopping-service-image registry.cn-hangzhou.aliyuncs.com/lxwshopping/shopping-service:2019
+sudo docker push registry.cn-hangzhou.aliyuncs.com/lxwshopping/shopping-service:2019
+sudo docker rmi registry.cn-hangzhou.aliyuncs.com/lxwshopping/shopping-service:2019
 ```
 
