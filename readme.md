@@ -913,3 +913,33 @@ sudo docker push registry.cn-hangzhou.aliyuncs.com/lxwshopping/shopping-service:
 sudo docker rmi registry.cn-hangzhou.aliyuncs.com/lxwshopping/shopping-service:2019
 ```
 
+## order-service构建脚本
+
+``` shell
+#!/bin/sh
+#依赖于user-service项目关系
+cd /var/lib/jenkins/workspace/order-service/order-service
+mvn clean
+mvn install
+echo 'order services OK '
+echo 'ALL INSTALL OK'
+cat <<EOF >  ./order-provider/target/Dockerfile
+FROM openjdk:8
+MAINTAINER violetdream
+LABEL name="order-service-image" version="1.0" author="violetdream"
+COPY order-provider-*.jar order-service-image.jar
+CMD ["java","-jar","order-service-image.jar"]
+EOF
+sudo docker stop order-service
+sudo docker rm order-service
+sudo docker rmi order-service-image
+sudo docker build -t order-service-image ./order-provider/target/
+echo 'order-service Image Create OK'
+sudo docker run -d --name order-service order-service-image
+echo 'order-service Container Create OK'
+#将境像推送到我的阿里云Hub上进行Registry
+sudo docker tag order-service-image registry.cn-hangzhou.aliyuncs.com/lxwshopping/order-service:2019
+sudo docker push registry.cn-hangzhou.aliyuncs.com/lxwshopping/order-service:2019
+sudo docker rmi registry.cn-hangzhou.aliyuncs.com/lxwshopping/order-service:2019
+```
+
