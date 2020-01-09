@@ -225,6 +225,8 @@ export PATH=$JAVA_HOME/bin:$MAVEN_HOME/bin:$PATH
 yum list | grep git
 yum install git
 `默认安装在目录/usr/libexec/git-core`
+#温馨提示：在Windows下设置下
+
 ```
 
 ### 安装Maven
