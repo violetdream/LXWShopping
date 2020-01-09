@@ -149,130 +149,136 @@ org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
 ## 准备环境
 
 * 一台2G单核服务器，1M宽带，装有CentOS7.6操作系统
-
 * 对操作系统更新并安装依赖
 
-  
+``` shell
+yum -y update
+yum install -y conntrack ipvsadm ipset jq sysstat curl iptables libseccomp
+#对系统相关参数设置
+01 `关闭防火墙`
+	systemctl stop firewalld && systemctl disable firewalld
+02 `关闭selinux`
+	setenforce 0
+	sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
+03 `关闭swap`
+	swapoff -a
+	sed -i '/swap/s/^\(.*\)$/#\1/g' /etc/fstab
+04 `配置iptables的ACCEPT规则`
+	iptables -F && iptables -X && iptables \
+    -F -t nat && iptables -X -t nat && iptables -P FORWARD ACCEPT
+05 `设置系统参数`
+# ====================================================================================
+cat <<EOF >  /etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+EOF
+sysctl --system
+# ======================================================================================
+```
 
-  ``` shell
-  yum -y update
-  yum install -y conntrack ipvsadm ipset jq sysstat curl iptables libseccomp
-  #对系统相关参数设置
-  01 `关闭防火墙`
-  	systemctl stop firewalld && systemctl disable firewalld
-  02 `关闭selinux`
-  	setenforce 0
-  	sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
-  03 `关闭swap`
-  	swapoff -a
-  	sed -i '/swap/s/^\(.*\)$/#\1/g' /etc/fstab
-  04 `配置iptables的ACCEPT规则`
-  	iptables -F && iptables -X && iptables \
-      -F -t nat && iptables -X -t nat && iptables -P FORWARD ACCEPT
-  05 `设置系统参数`
-  # ====================================================================================
-  cat <<EOF >  /etc/sysctl.d/k8s.conf
-  net.bridge.bridge-nf-call-ip6tables = 1
-  net.bridge.bridge-nf-call-iptables = 1
-  EOF
-  sysctl --system
-  # ======================================================================================
-  ```
 
-  
 
-* 安装docker18.09.0
+### 安装docker18.09.0
 
-  ``` shell
-  01 `进入虚拟机`
-      vagrant ssh [nodeName]
-  02 `卸载之前安装的docker`
-      sudo yum remove docker docker latest docker-latest-logrotate \
-      docker-logrotate docker-engine docker-client docker-client-latest docker-common
-  03 `安装必要依赖`
-      sudo yum install -y yum-utils device-mapper-persistent-data lvm2
-  04 `添加软件源信息`
-      sudo yum-config-manager \
-      --add-repo http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
-      yum list | grep docker-ce
-  05 `更新yum缓存`
-      sudo yum makecache fast
-  06 `安装docker`
-      sudo yum install -y docker-ce-18.09.0 docker-ce-cli-18.09.0 containerd.io 18.09.0
-  07 `启动docker并设置开机启动`
-      sudo systemctl start docker && sudo systemctl enable docker
-  08 `测试docker安装是否成功`
-      sudo docker run hello-world
-  `默认安装在目录/var/lib/docker`
-  #限制每个容器可以占用的磁盘空间
-  sudo dockerd --storage-driver overlay2 --storage-opt overlay2.size=1G
-  ```
+``` shell
+01 `进入虚拟机`
+    vagrant ssh [nodeName]
+02 `卸载之前安装的docker`
+    sudo yum remove docker docker latest docker-latest-logrotate \
+    docker-logrotate docker-engine docker-client docker-client-latest docker-common
+03 `安装必要依赖`
+    sudo yum install -y yum-utils device-mapper-persistent-data lvm2
+04 `添加软件源信息`
+    sudo yum-config-manager \
+    --add-repo http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
+    yum list | grep docker-ce
+05 `更新yum缓存`
+    sudo yum makecache fast
+06 `安装docker`
+    sudo yum install -y docker-ce-18.09.0 docker-ce-cli-18.09.0 containerd.io 18.09.0
+07 `启动docker并设置开机启动`
+    sudo systemctl start docker && sudo systemctl enable docker
+08 `测试docker安装是否成功`
+    sudo docker run hello-world
+`默认安装在目录/var/lib/docker`
+#限制每个容器可以占用的磁盘空间
+sudo dockerd --storage-driver overlay2 --storage-opt overlay2.size=1G
+```
 
-  
+### 安装openjdk或Oracle JDK
 
-* 安装openjdk
+``` shell
+yum list | grep openjdk
+yum install java-11-openjdk.x86_64安装Git
+`默认安装在目录/usr/lib/jvm/java-11-openjdk-11.0.5.10-0.el7_7.x86_64`
+#发现还是需要用JDK
+下载并上传jdk-11.0.5_linux-x64_bin.tar.gz至目录/lxw/java/
+配置/etc/profile
+export MAVEN_HOME=/lxw/maven/apache-maven-3.6.3
+export JAVA_HOME=/lxw/java/jdk-11.0.5
+export PATH=$JAVA_HOME/bin:$MAVEN_HOME/bin:$PATH
+```
 
-  ``` shell
-  yum list | grep openjdk
-  yum install java-11-openjdk.x86_64安装Git
-  `默认安装在目录/usr/lib/jvm/java-11-openjdk-11.0.5.10-0.el7_7.x86_64`
-  #发现还是需要用JDK
-  下载并上传jdk-11.0.5_linux-x64_bin.tar.gz至目录/lxw/java/
-  配置/etc/profile
-  export MAVEN_HOME=/lxw/maven/apache-maven-3.6.3
-  export JAVA_HOME=/lxw/java/jdk-11.0.5
-  export PATH=$JAVA_HOME/bin:$MAVEN_HOME/bin:$PATH
-  ```
+### 安装Git
 
-  
+``` shell
+yum list | grep git
+yum install git
+`默认安装在目录/usr/libexec/git-core`
+#温馨提示：在Windows下设置下
+git config --global core.autocrlf false
+```
 
-* 安装Git
+### 安装Maven
 
-  ``` shell
-  yum list | grep git
-  yum install git
-  `默认安装在目录/usr/libexec/git-core`
-  ```
+``` shell
+cd /lxw/maven
+wget http://mirror.bit.edu.cn/apache/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz
+tar -zxvf apache-maven-3.6.3-bin.tar.gz
+mkdir repo
+#配置环境变量,修改maven本地仓库存放路径及mirror境像地址
+vi /lxw/maven/apache-maven-3.6.3/conf/settings.xml
+通过修改profile文件:
+vim /etc/profile
+/export PATH //找到设置PATH的行，添加
+export MAVEN_HOME=/lxw/maven/apache-maven-3.6.3
+export PATH=$JAVA_HOME/bin:$MAVEN_HOME/bin:$PATH
+生效方法：系统重启
+有效期限：永久有效
+用户局限：对所有用户
+shutdown -r now 或  source /etc/profile 生效
+mvn -v
+Apache Maven 3.6.3 (cecedd343002696d0abb50b32b541b8a6ba2883f)
+Maven home: /lxw/maven/apache-maven-3.6.3
+Java version: 11.0.5, vendor: Oracle Corporation, runtime: /usr/lib/jvm/java-11-openjdk-11.0.5.10-0.el7_7.x86_64
+Default locale: en_US, platform encoding: UTF-8
+OS name: "linux", version: "3.10.0-1062.9.1.el7.x86_64", arch: "amd64", family: "unix"
 
-* 安装Maven
+#使和软链接，把mvn命令建立到/usr/bin目录下
+`Usage: ln [OPTION]... [-T] TARGET LINK_NAME   (1st form)\
+  or:  ln [OPTION]... TARGET                  (2nd form)\
+  or:  ln [OPTION]... TARGET... DIRECTORY     (3rd form)\
+  or:  ln [OPTION]... -t DIRECTORY TARGET...  (4th form)\
+In the 1st form, create a link to TARGET with the name LINK_NAME.\
+In the 2nd form, create a link to TARGET in the current directory.\
+In the 3rd and 4th forms, create links to each TARGET in DIRECTORY.
 
-  ``` shell
-  cd /lxw/maven
-  wget http://mirror.bit.edu.cn/apache/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz
-  tar -zxvf apache-maven-3.6.3-bin.tar.gz
-  mkdir repo
-  #配置环境变量,修改maven本地仓库存放路径及mirror境像地址
-  vi /lxw/maven/apache-maven-3.6.3/conf/settings.xml
-  通过修改profile文件:
-  vim /etc/profile
-  /export PATH //找到设置PATH的行，添加
-  export MAVEN_HOME=/lxw/maven/apache-maven-3.6.3
-  export PATH=$JAVA_HOME/bin:$MAVEN_HOME/bin:$PATH
-  生效方法：系统重启
-  有效期限：永久有效
-  用户局限：对所有用户
-  shutdown -r now 或  source /etc/profile 生效
-  mvn -v
-  Apache Maven 3.6.3 (cecedd343002696d0abb50b32b541b8a6ba2883f)
-  Maven home: /lxw/maven/apache-maven-3.6.3
-  Java version: 11.0.5, vendor: Oracle Corporation, runtime: /usr/lib/jvm/java-11-openjdk-11.0.5.10-0.el7_7.x86_64
-  Default locale: en_US, platform encoding: UTF-8
-  OS name: "linux", version: "3.10.0-1062.9.1.el7.x86_64", arch: "amd64", family: "unix"
+cd /usr/bin
+ln –s /lxw/maven/apache-maven-3.6.3/bin/mvn
+```
 
-  #使和软链接，把mvn命令建立到/usr/bin目录下
-  `Usage: ln [OPTION]... [-T] TARGET LINK_NAME   (1st form)\
-    or:  ln [OPTION]... TARGET                  (2nd form)\
-    or:  ln [OPTION]... TARGET... DIRECTORY     (3rd form)\
-    or:  ln [OPTION]... -t DIRECTORY TARGET...  (4th form)\
-  In the 1st form, create a link to TARGET with the name LINK_NAME.\
-  In the 2nd form, create a link to TARGET in the current directory.\
-  In the 3rd and 4th forms, create links to each TARGET in DIRECTORY.
-  
-  cd /usr/bin
-  ln –s /lxw/maven/apache-maven-3.6.3/bin/mvn
-  ```
-  
-  
+## 安装NPM
+
+``` shell
+#yum 安装
+yum install npm
+#验证安装
+npm -version
+3.10.10
+
+```
+
+
 
 ## 安装Jenkins实现自动化布署
 
@@ -860,9 +866,11 @@ sudo docker rmi registry.cn-hangzhou.aliyuncs.com/lxwshopping/user-service:2019
 
 ``` shell
 #!/bin/sh
-cd /var/lib/jenkins/workspace/user-service/lxwshopping-front
+cd /var/lib/jenkins/workspace/lxwshopping-front/lxwshopping-front
 sudo npm install
 echo 'lxwshopping-front install OK '
+sudo npm run build
+echo 'lxwshopping-front build OK '
 ls -ltr ./
 
 ```
