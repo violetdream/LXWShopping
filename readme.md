@@ -943,3 +943,33 @@ sudo docker push registry.cn-hangzhou.aliyuncs.com/lxwshopping/order-service:201
 sudo docker rmi registry.cn-hangzhou.aliyuncs.com/lxwshopping/order-service:2019
 ```
 
+## lxwshopping-user构建脚本
+
+``` shell
+#!/bin/sh
+#依赖于user-service项目关系
+cd /var/lib/jenkins/workspace/lxwshopping-user/lxwshopping-user
+mvn clean
+mvn install
+echo 'lxwshopping-user OK '
+echo 'ALL INSTALL OK'
+cat <<EOF >  ./target/Dockerfile
+FROM openjdk:8
+MAINTAINER violetdream
+LABEL name="lxwshopping-user-image" version="1.0" author="violetdream"
+COPY lxwshopping-user-*.jar lxwshopping-user-image.jar
+CMD ["java","-jar","lxwshopping-user-image.jar"]
+EOF
+sudo docker stop lxwshopping-user
+sudo docker rm lxwshopping-user
+sudo docker rmi lxwshopping-user-image
+sudo docker build -t lxwshopping-user-image ./target/
+echo 'lxwshopping-user Image Create OK'
+sudo docker run -d --name lxwshopping-user lxwshopping-user-image
+echo 'lxwshopping-user Container Create OK'
+#将境像推送到我的阿里云Hub上进行Registry
+sudo docker tag lxwshopping-user-image registry.cn-hangzhou.aliyuncs.com/lxwshopping/lxwshopping-user:2019
+sudo docker push registry.cn-hangzhou.aliyuncs.com/lxwshopping/lxwshopping-user:2019
+sudo docker rmi registry.cn-hangzhou.aliyuncs.com/lxwshopping/lxwshopping-user:2019
+```
+
