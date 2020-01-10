@@ -392,7 +392,7 @@ docker pull zookeeper
 
 ```shell
 #运行zookeeper，得到container
-docker run --name docker-zookeeper -p 2181:2181 -p 2888:2888 -p 3888:3888 --restart always -d zookeeper
+docker run --name docker-zookeeper -p 2181:2181 -p 2888:2888 -p 3888:3888 -m 200M --restart always -d zookeeper
 
 docker exec -it 2781fd823b82 /bin/bash
 ```
@@ -403,7 +403,7 @@ docker exec -it 2781fd823b82 /bin/bash
 #拉取境像
 docker pull redis
 #启动镜像
-docker run -d --name redis -p 6379:6379 -v /lxw/redis/data:/data -v /lxw/redis/redis.conf:/etc/redis/redis.conf  redis:latest
+docker run -d --name redis -m 100M -p 6379:6379 -v /lxw/redis/data:/data -v /lxw/redis/redis.conf:/etc/redis/redis.conf  redis:latest
 
 命令说明：
 -p 6379:6379 : 将容器的6379端口映射到主机的6379端口
@@ -445,7 +445,7 @@ symbolic-links=0
 # Custom config should go here
 !includedir /etc/mysql/conf.d/
 #创建MySQL容器
-docker run -di --name shopping_mysql -v /lxw/mysql/data/my.cnf:/etc/mysql/my.cnf -v /lxw/mysql/data:/data  -p 3306:3306 -e MYSQL_ROOT_PASSWORD=123456 mysql
+docker run -di --name shopping_mysql -v /lxw/mysql/data/my.cnf:/etc/mysql/my.cnf -v /lxw/mysql/data:/data  -p 3306:3306 -m 500M -e MYSQL_ROOT_PASSWORD=123456 mysql
 
 -p 代表端口映射，格式为  宿主机映射端口:容器运行端口
 -e 代表添加环境变量  MYSQL_ROOT_PASSWORD是root用户的登陆密码
@@ -572,7 +572,7 @@ server{
 #拉取境像文件 [rabbitmq image](https://registry.hub.docker.com/_/rabbitmq/)
 docker pull rabbitmq:3.8.2-management
 #启动rabbitmq
-docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 -v /lxw/rabbitmq/data:/var/lib/rabbitmq --hostname myRabbit -e RABBITMQ_DEFAULT_USER=rabbitmq -e RABBITMQ_DEFAULT_PASS=123456 rabbitmq:3.8.2-management
+docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 -v /lxw/rabbitmq/data:/var/lib/rabbitmq -m 200M --hostname myRabbit -e RABBITMQ_DEFAULT_USER=rabbitmq -e RABBITMQ_DEFAULT_PASS=123456 rabbitmq:3.8.2-management
 #说明：
 -d 后台运行容器；
 --name 指定容器名；
@@ -875,7 +875,7 @@ sudo docker rm user-service
 sudo docker rmi user-service-image
 sudo docker build -t user-service-image ./user-provider/target/
 echo 'user-service Image Create OK'
-sudo docker run -d --name user-service user-service-image
+sudo docker run -d --name user-service -m 200M user-service-image
 echo 'user-service Container Create OK'
 #将境像推送到我的阿里云Hub上进行Registry
 sudo docker tag user-service-image registry.cn-hangzhou.aliyuncs.com/lxwshopping/user-service:2019
@@ -905,7 +905,7 @@ sudo docker rm shopping-service
 sudo docker rmi shopping-service-image
 sudo docker build -t shopping-service-image ./shopping-provider/target/
 echo 'shopping-service Image Create OK'
-sudo docker run -d --name shopping-service shopping-service-image
+sudo docker run -d --name shopping-service -m 200M shopping-service-image
 echo 'shopping-service Container Create OK'
 #将境像推送到我的阿里云Hub上进行Registry
 sudo docker tag shopping-service-image registry.cn-hangzhou.aliyuncs.com/lxwshopping/shopping-service:2019
@@ -935,7 +935,7 @@ sudo docker rm order-service
 sudo docker rmi order-service-image
 sudo docker build -t order-service-image ./order-provider/target/
 echo 'order-service Image Create OK'
-sudo docker run -d --name order-service order-service-image
+sudo docker run -d --name order-service  -m 200M order-service-image
 echo 'order-service Container Create OK'
 #将境像推送到我的阿里云Hub上进行Registry
 sudo docker tag order-service-image registry.cn-hangzhou.aliyuncs.com/lxwshopping/order-service:2019
@@ -965,11 +965,41 @@ sudo docker rm lxwshopping-user
 sudo docker rmi lxwshopping-user-image
 sudo docker build -t lxwshopping-user-image ./target/
 echo 'lxwshopping-user Image Create OK'
-sudo docker run -d --name lxwshopping-user lxwshopping-user-image
+sudo docker run -d --name lxwshopping-user -p 8081:8081 -m 200M lxwshopping-user-image
 echo 'lxwshopping-user Container Create OK'
 #将境像推送到我的阿里云Hub上进行Registry
 sudo docker tag lxwshopping-user-image registry.cn-hangzhou.aliyuncs.com/lxwshopping/lxwshopping-user:2019
 sudo docker push registry.cn-hangzhou.aliyuncs.com/lxwshopping/lxwshopping-user:2019
 sudo docker rmi registry.cn-hangzhou.aliyuncs.com/lxwshopping/lxwshopping-user:2019
+```
+
+## lxwshopping-shopping构建脚本
+
+``` shell
+#!/bin/sh
+#依赖于user-service项目关系
+cd /var/lib/jenkins/workspace/lxwshopping-shopping/lxwshopping-shopping
+mvn clean
+mvn install
+echo 'lxwshopping-shopping OK '
+echo 'ALL INSTALL OK'
+cat <<EOF >  ./target/Dockerfile
+FROM openjdk:8
+MAINTAINER violetdream
+LABEL name="lxwshopping-shopping-image" version="1.0" author="violetdream"
+COPY lxwshopping-shopping-*.jar lxwshopping-shopping-image.jar
+CMD ["java","-jar","lxwshopping-shopping-image.jar"]
+EOF
+sudo docker stop lxwshopping-shopping
+sudo docker rm lxwshopping-shopping
+sudo docker rmi lxwshopping-shopping-image
+sudo docker build -t lxwshopping-shopping-image ./target/
+echo 'lxwshopping-shopping Image Create OK'
+sudo docker run -d --name lxwshopping-shopping -p 8082:8082 -m 200M lxwshopping-shopping-image
+echo 'lxwshopping-shopping Container Create OK'
+#将境像推送到我的阿里云Hub上进行Registry
+sudo docker tag lxwshopping-shopping-image registry.cn-hangzhou.aliyuncs.com/lxwshopping/lxwshopping-shopping:2019
+sudo docker push registry.cn-hangzhou.aliyuncs.com/lxwshopping/lxwshopping-shopping:2019
+sudo docker rmi registry.cn-hangzhou.aliyuncs.com/lxwshopping/lxwshopping-shopping:2019
 ```
 
