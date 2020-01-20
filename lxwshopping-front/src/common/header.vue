@@ -447,7 +447,6 @@
       _getNavList () {
         navList().then(res => {
           this.navList = res.result
-          console.log(this.navList);
         })
       },
       _getGoodsCategoryList () {
@@ -493,21 +492,35 @@
       }
     },
     mounted () {
-      this._getNavList()
-      this._getGoodsCategoryList()
-      this._getRecommendGoodsAsPhone()
-      this.token = getStore('token')
+      this._getNavList();
+      console.log('--getNavList()--');
+      this._getGoodsCategoryList();
+      console.log('--getGoodsCategoryList()--');
+      this._getRecommendGoodsAsPhone();
+      console.log('--getRecommendGoodsAsPhone()--');
+      this.token = getStore('token');
+      console.log('--getStore()--');
       if (this.login) {
-        this._getCartList()
+        this._getCartList();
+        console.log('--_getCartList()--');
       } else {
-        this.INIT_BUYCART()
+        this.INIT_BUYCART();
+        console.log('--INIT_BUYCART()--');
       }
-      this.navFixed()
-      this.getPage()
+      this.navFixed();
+      console.log('--navFixed()--');
+      this.getPage();
+      console.log('--getPage()--');
       window.addEventListener('scroll', this.navFixed)
-      window.addEventListener('resize', this.navFixed)
-      if (typeof (this.$route.query.key) !== undefined) {
-        this.input = this.$route.query.key
+      window.addEventListener('resize', this.navFixed);
+      console.log("$route.key"+this.$route.query.key);
+      try{
+        if (typeof (this.$route.query.key) !== undefined) {
+          this.input = this.$route.query.key;
+          console.log("input:"+this.input);
+        }
+      }catch (e) {
+        console.log("error:"+e);
       }
     },
     components: {

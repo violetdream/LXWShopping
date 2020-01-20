@@ -9,8 +9,10 @@ import com.personal.user.datamodel.UserLoginResponse;
 import com.personal.user.datamodel.entitys.User;
 import com.personal.user.datamodel.persistence.UserMapper;
 import com.personal.user.service.IUserLoginService;
+import com.personal.user.utils.ExceptionProcessorUtils;
 import com.personal.user.utils.JwtTokenUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.dubbo.config.annotation.Service;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,6 +67,24 @@ public class UserLoginServiceImpl implements IUserLoginService {
 
     @Override
     public CheckAuthResponse validToken(CheckAuthRequest request) {
-        return null;
+        log.info("Begin UserLoginServiceImpl.validToken: request:"+request);
+        CheckAuthResponse response=new CheckAuthResponse();
+        response.setCode(SysRetCodeConstants.SUCCESS.getCode());
+        response.setMsg(SysRetCodeConstants.SUCCESS.getMessage());
+        try{
+            request.requestCheck();
+            String decodeMsg=JwtTokenUtils.validateJWTToken(request.getToken());
+            if(StringUtils.isNotBlank(decodeMsg)){
+                log.info("validate success");
+                response.setUserInfo(decodeMsg);
+                return response;
+            }
+            response.setCode(SysRetCodeConstants.TOKEN_VALID_FAILED.getCode());
+            response.setMsg(SysRetCodeConstants.TOKEN_VALID_FAILED.getMessage());
+        }catch (Exception e){
+            log.error("UserLoginServiceImpl.validToken Occur Exception :"+e);
+            ExceptionProcessorUtils.wrapperHandlerException(response,e);
+        }
+        return response;
     }
 }
