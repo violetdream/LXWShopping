@@ -23,6 +23,7 @@ spring:
       address: 172.18.138.75:6379
       timeout: 3000
       database: 0
+      password: 123456
       pool:
         max-active: 20
         max-idle: 10
